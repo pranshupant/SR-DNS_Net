@@ -1,1 +1,98 @@
+import os
+import numpy as np
+from tqdm import tqdm
+import torch
+import torchvision
+import torch.nn as nn
+from torch.utils import data
+from torchvision import transforms
+from torchvision.utils import save_image
+import time
+import pdb
+from PIL import Image
+import matplotlib.pyplot as plt 
+
+## TODO: [] np.permute for selecting sample ids.
+
+ROOT = 'data/k21/'
+LES_DATA_PATH = ROOT + "DNS-LES_3C/les_3c/"
+DNS_DATA_PATH = ROOT + "DNS-LES_3C/dns_3c/"
+
+class MyDataset(data.Dataset):
+    def __init__(self, mode, transform=None):
+
+        # array = np.random.permutation(train+dev+test)
+
+        if mode == 'train':
+            self.image_paths, self.target_paths = self.get_train_data()
+
+        elif mode == 'dev':
+            self.image_paths, self.target_paths = self.get_dev_data()
+
+        elif mode == 'test':
+            self.image_paths, self.target_paths = self.get_test_data()
+
+        else:
+            print("Incorrect Mode!")
+
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, index):
+        ip = Image.open(self.image_paths[index])
+        op = Image.open(self.target_paths[index])
+        x = self.transform(ip)
+        y = self.transform(op)
+        return x, y
+
+    def get_train_data(self):
+
+        nums = 10000
+        image_paths = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                        for i in range(nums)]
+        target_paths = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                        for i in range(nums)] 
+
+        nums = 20000 #30000
+        image_paths_1 = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                        for i in range(30000, 30000+nums)]
+        target_paths_1 = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                        for i in range(30000, 30000+nums)] 
+
+        image_paths.extend(image_paths_1)
+        target_paths.extend(target_paths_1)
+
+        print(f'Training Data Samples: {len(image_paths)}')
+        # print(image_paths[39999])
+        return image_paths, target_paths
+
+
+    def get_dev_data(self):
+
+        nums = 1000
+        image_paths_dev = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in range(10000, 10000+nums)]
+        target_paths_dev = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in range(10000, 10000+nums)] 
+        print(f'Development Data Samples: {len(image_paths_dev)}')
+    
+        # print(image_paths_dev[0])
+        return image_paths_dev, target_paths_dev
+
+
+    def get_test_data(self):
+
+        nums = 1000
+        image_paths_test = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in range(20000, 20000+nums)]
+        target_paths_test = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in range(20000, 20000+nums)] 
+        
+        print(f'Test Data Samples: {len(image_paths_test)}')
+    
+        # print(image_paths_test[0])  
+        return image_paths_test, target_paths_test
 

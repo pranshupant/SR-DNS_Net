@@ -1,5 +1,8 @@
 # Directories to exclude
 data/
+save_3c/
+test_3c/
+model_3c/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
