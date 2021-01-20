@@ -14,14 +14,18 @@ import matplotlib.pyplot as plt
 
 ## TODO: [] np.permute for selecting sample ids.
 
-ROOT = 'data/k21/'
-LES_DATA_PATH = ROOT + "DNS-LES_3C/les_3c/"
-DNS_DATA_PATH = ROOT + "DNS-LES_3C/dns_3c/"
 
 class MyDataset(data.Dataset):
-    def __init__(self, mode, transform=None):
+    def __init__(self, mode, root, img_list, data_split, transform=None):
 
-        # array = np.random.permutation(train+dev+test)
+        self.ROOT = root
+
+        self.LES_DATA_PATH = self.ROOT + "/DNS-LES_3C/les_3c/"
+        self.DNS_DATA_PATH = self.ROOT + "/DNS-LES_3C/dns_3c/"
+
+        self.img_list = img_list
+
+        self.data_split = data_split
 
         if mode == 'train':
             self.image_paths, self.target_paths = self.get_train_data()
@@ -34,7 +38,6 @@ class MyDataset(data.Dataset):
 
         else:
             print("Incorrect Mode!")
-
 
         self.transform = transform
 
@@ -50,20 +53,12 @@ class MyDataset(data.Dataset):
 
     def get_train_data(self):
 
-        nums = 10000
-        image_paths = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                        for i in range(nums)]
-        target_paths = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                        for i in range(nums)] 
+        nums = self.img_list[:int(self.data_split[0])]
+        image_paths = [self.LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                        for i in nums]
+        target_paths = [self.DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                        for i in nums] 
 
-        nums = 20000 #30000
-        image_paths_1 = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                        for i in range(30000, 30000+nums)]
-        target_paths_1 = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                        for i in range(30000, 30000+nums)] 
-
-        image_paths.extend(image_paths_1)
-        target_paths.extend(target_paths_1)
 
         print(f'Training Data Samples: {len(image_paths)}')
         # print(image_paths[39999])
@@ -72,11 +67,11 @@ class MyDataset(data.Dataset):
 
     def get_dev_data(self):
 
-        nums = 1000
-        image_paths_dev = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                            for i in range(10000, 10000+nums)]
-        target_paths_dev = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                            for i in range(10000, 10000+nums)] 
+        nums = self.img_list[-(int(self.data_split[1])+int(self.data_split[2])): -int(self.data_split[2])]
+        image_paths_dev = [self.LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in nums]
+        target_paths_dev = [self.DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in nums] 
         print(f'Development Data Samples: {len(image_paths_dev)}')
     
         # print(image_paths_dev[0])
@@ -85,14 +80,13 @@ class MyDataset(data.Dataset):
 
     def get_test_data(self):
 
-        nums = 1000
-        image_paths_test = [LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                            for i in range(20000, 20000+nums)]
-        target_paths_test = [DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
-                            for i in range(20000, 20000+nums)] 
+        nums = self.img_list[-int(self.data_split[2]):]
+        image_paths_test = [self.LES_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in nums]
+        target_paths_test = [self.DNS_DATA_PATH+str(i/5670)[:3]+"0/"+str(i%567)+".png" 
+                            for i in nums] 
         
         print(f'Test Data Samples: {len(image_paths_test)}')
     
         # print(image_paths_test[0])  
         return image_paths_test, target_paths_test
-

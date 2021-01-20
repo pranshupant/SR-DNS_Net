@@ -15,22 +15,22 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from utils import *
 
-batch_size = 32
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-## TODO : [] Remove batch_size decl.
-##      : [] Print within the fucntions not main
+## TODO : [*] Remove batch_size decl.
+## TODO : [*] Print within the fucntions not main
+## TODO : [] Fix test predictions with list averaging
 
 def train_epoch(model, data_loader, criterion, optimizer):
     model.train()
     
-    running_loss = 0
-    avg_psnr = 0
-    avg_psnr_les = 0
+    running_loss = []
+    avg_psnr = []
+    avg_psnr_les = []
 
     start_time = time.time()
     print('Train Loop')
+
     for batch_num, (img, target) in tqdm(enumerate(data_loader), total=len(data_loader), ascii=True):
 
         img = img.to(device)
@@ -38,18 +38,18 @@ def train_epoch(model, data_loader, criterion, optimizer):
 
         output = model(img)
         loss = criterion(output, target)
-        psnr = PSNR(output, target, batch_size)
-        psnr_les = PSNR(img, target, batch_size)
+        psnr = PSNR(output, target)
+        psnr_les = PSNR(img, target)
         
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        running_loss += loss.item()/len(data_loader)
-        avg_psnr += psnr.item()/len(data_loader)
-        avg_psnr_les += psnr_les.item()/len(data_loader)
+        running_loss.append(loss.item())
+        avg_psnr.append(psnr.item())
+        avg_psnr_les.append(psnr_les.item())
 
     #print(' ')
-    print('Train_Loss:{:.6f}, PSNR_DNS:{:.4f}, PSNR_LES:{:.4f}'.format(running_loss, psnr, psnr_les))
+    print(f'Train_Loss:{sum(running_loss)/len(running_loss):.6f}, PSNR_DNS:{sum(avg_psnr)/len(avg_psnr):.4f}, PSNR_LES:{sum(avg_psnr_les)/len(avg_psnr_les):.4f}')
     torch.cuda.empty_cache()
     end_time = time.time()
     del img
@@ -57,18 +57,18 @@ def train_epoch(model, data_loader, criterion, optimizer):
     del loss
     print("Train Time: {:.2f} s".format(end_time-start_time))
 
-    return running_loss
+    return sum(running_loss)/len(running_loss)
 
 
 def dev_epoch(model, data_loader, criterion):
     with torch.no_grad():
         model.eval()
 
-        running_loss = 0
-        avg_psnr = 0
-        avg_psnr_les = 0
-        avg_ssim_dns = 0
-        avg_ssim_les = 0
+        running_loss = []
+        avg_psnr = []
+        avg_psnr_les = []
+        avg_ssim_dns = []
+        avg_ssim_les = []
 
         start_time = time.time()
         print('Dev Loop')
@@ -81,16 +81,16 @@ def dev_epoch(model, data_loader, criterion):
 
             output = model(img)
             loss = criterion(output, target)
-            psnr = PSNR(output, target,batch_size)
-            psnr_les = PSNR(img, target,batch_size)
-            ssim_dns = SSIM(output, target, batch_size)
-            ssim_les = SSIM(img, target, batch_size)
+            psnr = PSNR(output, target)
+            psnr_les = PSNR(img, target)
+            ssim_dns = SSIM(output, target)
+            ssim_les = SSIM(img, target)
 
-            running_loss += loss.item()/len(data_loader)
-            avg_psnr += psnr.item()/len(data_loader)
-            avg_psnr_les += psnr_les.item()/len(data_loader)
-            avg_ssim_dns += ssim_dns.item()/len(data_loader)
-            avg_ssim_les += ssim_les.item()/len(data_loader)
+            running_loss.append(loss.item())
+            avg_psnr.append(psnr.item())
+            avg_psnr_les.append(psnr_les.item())
+            avg_ssim_dns.append(ssim_dns.item())
+            avg_ssim_les.append(ssim_les.item())
 
         torch.cuda.empty_cache()
         end_time = time.time()
@@ -101,11 +101,12 @@ def dev_epoch(model, data_loader, criterion):
         del psnr
         del psnr_les
 
-        print("Dev Time: {:.2f} s".format(end_time-start_time))
+        print(f"Dev Time: {end_time-start_time:.2f} s")
+        print(f'PSNR_DNS:{sum(avg_psnr)/len(avg_psnr):.4f}, PSNR_LES:{sum(avg_psnr_les)/len(avg_psnr_les):.4f}, SSIM_DNS:{sum(avg_ssim_dns)/len(avg_ssim_dns):.4f}, SSIM_LES:{sum(avg_ssim_les)/len(avg_ssim_les):.4f}')
 
-        return running_loss, avg_psnr_les, avg_psnr, avg_ssim_les, avg_ssim_dns
+        return sum(running_loss)/len(running_loss)
 
-def test_predictions(model, test_loader, batch_size):
+def test_predictions(model, test_loader, root):
     with torch.no_grad():
         model.eval()
         avg_psnr = 0
@@ -116,7 +117,6 @@ def test_predictions(model, test_loader, batch_size):
         avg_ssim_les = 0
         avg_ssim_dns = 0
 
-        P = []
         L = []
         R = []
         D = []
@@ -131,14 +131,14 @@ def test_predictions(model, test_loader, batch_size):
             target = target.to(device)
             
             out = model(img)
-            psnr = PSNR(out, target, batch_size)
-            psnr_les = PSNR(img, target, batch_size)
+            psnr = PSNR(out, target)
+            psnr_les = PSNR(img, target)
 
             les_ke, recon_ke, dns_ke = KE(img, out, target)
             les_ake, recon_ake, dns_ake = Avg_KE(img, out, target)
 
-            ssim_dns = SSIM(out, target, batch_size)
-            ssim_les = SSIM(img, target, batch_size)
+            ssim_dns = SSIM(out, target)
+            ssim_les = SSIM(img, target)
             L.append(les_ke.cpu().numpy())
             R.append(recon_ke.cpu().numpy())
             D.append(dns_ke.cpu().numpy())
@@ -147,12 +147,12 @@ def test_predictions(model, test_loader, batch_size):
             R_.append(recon_ake.cpu().numpy())
             D_.append(dns_ake.cpu().numpy())
 
-            pic = to_img(out.cpu()) #Only the first image of the batch.
-            save_image(pic, 'test_3c/image_{}.png'.format(batch_idx))
+            pic = to_img(out) #Only the first image of the batch.
+            save_image(pic, f'{root}/test_3c/image_{batch_idx}.png')
             t = to_img(target) #Only the first image of the batch.
-            save_image(t, 'test_3c/image_{}_t.png'.format(batch_idx))
+            save_image(t, f'{root}/test_3c/image_{batch_idx}_t.png')
             i = to_img(img) #Only the first image of the batch.
-            save_image(i, 'test_3c/image_{}_og.png'.format(batch_idx))
+            save_image(i, f'{root}/test_3c/image_{batch_idx}_og.png')
 
             del img
             del target
@@ -169,7 +169,11 @@ def test_predictions(model, test_loader, batch_size):
 
     plot_MAE(L, R, D)
     plot_Avg_MAE(L_, R_, D_)
-    return avg_psnr, avg_psnr_les, avg_les_ke, avg_recon_ke, avg_dns_ke, avg_ssim_les, avg_ssim_dns
+
+    print(f"Metrics On Test Data")
+    print(f"PSNR_RECON: {avg_psnr:.4f},PSNR_LES: {avg_psnr_les:.4f}")
+    print(f"KE_RECON: {avg_dns_ke:.4f}, KE_LES: {avg_les_ke:.4f}, KE_RECON: {avg_recon_ke:.4f}")
+    print(f"SSIM_RECON: {avg_ssim_dns:.4f}, SSIM_LES: {avg_ssim_les:.4f}")
 
 def train_predictions(model, train_loader):
     with torch.no_grad():
@@ -182,24 +186,19 @@ def train_predictions(model, train_loader):
         avg_ssim_les = 0
         avg_ssim_dns = 0
 
-        P = []
-
         for batch_idx, (img, target) in enumerate(train_loader):  
-
-            # if batch_idx > 3:
-            #     break 
             
             img = img.to(device)
             target = target.to(device)
             
             out = model(img)
-            psnr = PSNR(out, target, batch_size)
-            psnr_les = PSNR(img, target, batch_size)
+            psnr = PSNR(out, target)
+            psnr_les = PSNR(img, target)
             les_ke, recon_ke, dns_ke = KE(img, out, target)
-            ssim_dns = SSIM(out, target, batch_size)
-            ssim_les = SSIM(img, target, batch_size)
+            ssim_dns = SSIM(out, target)
+            ssim_les = SSIM(img, target)
 
-            pic = to_img(out.cpu()) #Only the first image of the batch.
+            pic = to_img(out) #Only the first image of the batch.
             save_image(pic, 'test_3c/image_tr_{}.png'.format(batch_idx))
             t = to_img(target) #Only the first image of the batch.
             save_image(t, 'test_3c/image_tr_{}_t.png'.format(batch_idx))
@@ -219,5 +218,8 @@ def train_predictions(model, train_loader):
             avg_ssim_les += ssim_les.item()/len(train_loader)
             avg_ssim_dns += ssim_dns.item()/len(train_loader)
 
-    return avg_psnr, avg_psnr_les, avg_les_ke, avg_recon_ke, avg_dns_ke, avg_ssim_les, avg_ssim_dns
+    print(f"Metrics On Train Data")
+    print(f"PSNR_RECON: {avg_psnr:.4f},PSNR_LES: {avg_psnr_les:.4f}")
+    print(f"KE_RECON: {avg_dns_ke:.4f}, KE_LES: {avg_les_ke:.4f}, KE_RECON: {avg_recon_ke:.4f}")
+    print(f"SSIM_RECON: {avg_ssim_dns:.4f}, SSIM_LES: {avg_ssim_les:.4f}")
 

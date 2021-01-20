@@ -14,27 +14,43 @@ import pdb
 from PIL import Image
 import matplotlib.pyplot as plt 
 from skimage.measure import compare_ssim
+from skimage.metrics import structural_similarity
+from skimage.metrics import peak_signal_noise_ratio
 
 def to_img(x):
     x = 0.5 * (x + 1)
     x = x.clamp(0, 1)
-    x = x.view(x.size(0), -1, 64, 64)
+    x = x.view(3, 64, 64)
     return x
 
-def PSNR(op, t, batch_size): 
-    mse = torch.sum((t - op) ** 2) 
-    #print(mse.size())
-    mse /= (batch_size*64*64)
+def create_directories(root, mode):
 
-    max_pixel = 1.
-    psnr = 20 * torch.log10(max_pixel / torch.sqrt(mse))
+    if not os.path.exists(f'{root}/model{mode}'):
+        os.mkdir(f'{root}/model{mode}')
+
+    if not os.path.exists(f'{root}/test{mode}'):
+        os.mkdir(f'{root}/test{mode}')
+
+# def PSNR(op, t, batch_size): 
+#     mse = torch.sum((t - op) ** 2) 
+#     #print(mse.size())
+#     mse /= (batch_size*64*64)
+
+#     max_pixel = 1.
+#     psnr = 20 * torch.log10(max_pixel / torch.sqrt(mse))
+#     #print(psnr.size())
+#     return psnr 
+
+def PSNR(op, t):
+    batch_size = op.shape[0]
+    psnr = sum([peak_signal_noise_ratio(to_img(op[i]).cpu().detach().numpy(), to_img(t[i]).cpu().detach().numpy()) for i in range(op.shape[0])])/batch_size
     #print(psnr.size())
     return psnr 
 
 def KE(img, op, t): 
-    ke_recon = torch.sum(op ** 2)/op.size()[0] 
-    ke_dns = torch.sum(t ** 2)/t.size()[0] 
-    ke_les = torch.sum(img ** 2)/img.size()[0] 
+    ke_recon = torch.sum(op ** 2)/op.shape[0] 
+    ke_dns = torch.sum(t ** 2)/t.shape[0] 
+    ke_les = torch.sum(img ** 2)/img.shape[0] 
  
     return ke_les, ke_recon, ke_dns
 
@@ -52,17 +68,11 @@ def Avg_KE(img, op, t):
  
     return ke_les, ke_recon, ke_dns
 
-def SSIM(op, t, batch_size):
-    ssim = 0 
-    #print(op.size(), t.size())
-    for i in range(op.size()[0]):
-        tar = to_img(t[i])
-        out = to_img(op[i])
-        # print(out[0,0].size())
-        (score, diff) = compare_ssim(out[0,0].cpu().numpy(), tar[0,0].cpu().numpy(), full=True)
-        ssim+=score/batch_size
-    
-        #print("SSIM: {}".format(score))
+def SSIM(op, t):
+    batch_size = op.shape[0]
+    ssim = sum([structural_similarity(to_img(op[i]).cpu().detach().numpy().transpose(1,2,0), to_img(t[i]).cpu().detach().numpy().transpose(1,2,0),
+                multichannel=True) for i in range(op.shape[0])])/batch_size
+
     return ssim
 
 def plot_MAE(L, R, D):
@@ -94,54 +104,9 @@ def plot_MAE(L, R, D):
     plt.savefig('MAE_L.eps')  # plt.show()
     plt.close()
 
-def plot_Avg_MAE(L, R, D):
-
-    # MAE = np.abs((np.array(R) - np.array(D))/np.array(D))
-    # print(MAE.shape)
-    # print(MAE)
-    avg = np.mean(np.abs(R))
-    # plt.xticks([])
-    plt.title('Reconstruction')
-    plt.ylabel('Average Turbulent Velocity')
-    # plt.ylim(0,1.2)
-    plt.plot(np.abs(R), 'ko', fillstyle = 'none')
-    plt.axhline(avg, color = 'r')
-    plt.savefig('AM.eps')
-    plt.close()
-
-    # MAE_L = np.abs((np.array(L) - np.array(D))/np.array(D))
-    # print(MAE.shape)
-    # print(MAE)
-    avg_l = np.mean(np.abs(D))
-    # plt.xticks([])
-    plt.title('DNS')
-    plt.ylabel('Average Turbulent Velocity')
-    # plt.plot(MAE, 'yo', fillstyle = 'none')
-    plt.plot(np.abs(D), 'ko', fillstyle = 'none')
-    # plt.axhline(avg, color = 'r')
-    plt.axhline(avg_l, color = 'r')
-    plt.savefig('AM_L.eps')  # plt.show()
-    plt.close()
-
-    error = np.abs(np.array(D) - np.array(R))
-    avg_e = np.mean(np.abs(error))
-    # plt.xticks([])
-    plt.title('Error')
-    plt.ylim(0, 0.35)
-    plt.ylabel('Turbulent Velocity Error')
-    # plt.plot(MAE, 'yo', fillstyle = 'none')
-    plt.plot(error, 'ko', fillstyle = 'none')
-    # plt.axhline(avg, color = 'r')
-    plt.axhline(avg_e, color = 'r')
-    plt.savefig('error.eps')  # plt.show()
-    plt.close()
-
 #combined plot for turbulent velocity
 def plot_Avg_MAE(L, R, D):
 
-    # MAE = np.abs((np.array(R) - np.array(D))/np.array(D))
-    # print(MAE.shape)
-    # print(MAE)
     avg = np.mean(np.abs(R))
     # plt.xticks([])
     # plt.title('Reconstruction')
@@ -151,9 +116,6 @@ def plot_Avg_MAE(L, R, D):
     plt.plot(np.abs(R),  marker = '^', c = 'dodgerblue', label='Recon',ls=' ', ms='3.5')
 
 
-    # MAE_L = np.abs((np.array(L) - np.array(D))/np.array(D))
-    # print(MAE.shape)
-    # print(MAE)
     avg_l = np.mean(np.abs(D))
     # plt.xticks([])
     # plt.title('DNS')
