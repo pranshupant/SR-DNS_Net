@@ -16,11 +16,13 @@ from PIL import Image
 import matplotlib.pyplot as plt 
 
 from dataloader import MyDataset
-from model import MobileNetv2_SISR
+from model import MobileNetv2_SISR, Unet
 from utils import *
 from train import *
 
 # Sample command -> python3 main.py 100 32 -d F -m 3
+## TODO: [] Arg Parse for test pred
+## TODO: [] Try U-Net
 
 if __name__ == '__main__':
 
@@ -39,7 +41,7 @@ if __name__ == '__main__':
     root += d_set.get(args.dataset)
     mode = mode_dict.get(args.mode)
 
-    print(root, mode)
+    # print(root, mode)
     print(args.epoch, args.batch_size)
 
     create_directories(root, mode)
@@ -84,7 +86,8 @@ if __name__ == '__main__':
     test_loader = data.DataLoader(test_dataset, **test_loader_args)
     # print(test_dataset.__len__())
 
-    model = MobileNetv2_SISR()
+    # model = MobileNetv2_SISR()
+    model = Unet()
     model.apply(MobileNetv2_SISR.init_weights)
     device = torch.device("cuda")
     model.eval()
@@ -109,13 +112,14 @@ if __name__ == '__main__':
 
         print(' ')
         print(f'epoch [{epoch+1}/{num_epochs}], Train_Loss:{train_loss:.6f}, Dev_Loss:{dev_loss:.6f}')
-        
-        torch.save(model.state_dict(), f'{root}/model_3c/SISR_mv2f_{epoch}.pth')
+
         scheduler.step(train_loss)
         print(optimizer)
         print('='*100)
 
+        if epoch%5 == 0:
+            torch.save(model.state_dict(), f'{root}/model_3c/SISR_mv2f_{epoch}.pth')
+
     test_predictions(model, test_loader, root)
     # train_predictions(model, test_loader)
-
 
