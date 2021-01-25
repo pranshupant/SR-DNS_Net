@@ -23,6 +23,10 @@ from train import *
 # Sample command -> python3 main.py 100 32 -d F -m 3
 ## TODO: [] Arg Parse for test pred
 ## TODO: [] Try U-Net
+## TODO: [] Performance with different dset sizes
+## TODO: [] Validation and train plots
+## TODO: [] Intermediate activations save on test data
+## TODO: [] Mobile Unet
 
 if __name__ == '__main__':
 
