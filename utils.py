@@ -31,16 +31,6 @@ def create_directories(root, mode):
     if not os.path.exists(f'{root}/test{mode}'):
         os.mkdir(f'{root}/test{mode}')
 
-# def PSNR(op, t, batch_size): 
-#     mse = torch.sum((t - op) ** 2) 
-#     #print(mse.size())
-#     mse /= (batch_size*64*64)
-
-#     max_pixel = 1.
-#     psnr = 20 * torch.log10(max_pixel / torch.sqrt(mse))
-#     #print(psnr.size())
-#     return psnr 
-
 def PSNR(op, t):
     batch_size = op.shape[0]
     psnr = sum([peak_signal_noise_ratio(to_img(op[i]).cpu().detach().numpy(), to_img(t[i]).cpu().detach().numpy()) for i in range(op.shape[0])])/batch_size
@@ -55,12 +45,10 @@ def KE(img, op, t):
     return ke_les, ke_recon, ke_dns
 
 def Avg_KE(img, op, t): 
-    # pdb.set_trace()
 
     op = np.squeeze(op)
     img = np.squeeze(img)
     t = np.squeeze(t)
-    # pdb.set_trace()
 
     ke_recon = torch.mean(torch.abs(op - torch.mean(op)))
     ke_dns = torch.mean(torch.abs(t - torch.mean(t)))
@@ -128,3 +116,12 @@ def plot_Avg_MAE(L, R, D):
     plt.legend(loc='best')
     plt.savefig('combined.eps')  # plt.show()
     plt.close()
+
+def plot_training(Train_Loss, Dev_Loss):
+    plt.title(f'Training & Validation Losses')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.plot(Train_Loss, 'k-')
+    plt.plot(Dev_Loss, 'g-')
+    plt.legend(loc='best', labels=['Training Loss', 'Validation Loss'])
+    plt.savefig(f'training_plot.png', dpi=600)

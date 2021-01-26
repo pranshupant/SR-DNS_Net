@@ -145,7 +145,7 @@ class convTranspose_bn_LRelu(nn.Module):
         return x 
     
 class Downsample(nn.Module):
-    def __init__(self, C_in, C_out, kernel, stride, padding): 
+    def __init__(self, C_in, C_out, kernel=4, stride=2, padding=1): 
         super(Downsample, self).__init__()
         self.layer = nn.Sequential(
             nn.Conv2d(C_in, C_in, kernel, stride, padding, groups=C_in),
@@ -160,7 +160,7 @@ class Downsample(nn.Module):
 
 
 class Upsample(nn.Module):
-    def __init__(self, C_in, C_out, kernel, stride, padding): 
+    def __init__(self, C_in, C_out, kernel=4, stride=2, padding=1): 
         super(Upsample, self).__init__()
         self.layer = nn.Sequential(
             nn.ConvTranspose2d(C_in, C_in, kernel, stride, padding, groups=C_in),
@@ -179,7 +179,6 @@ class Upsample(nn.Module):
         if last==False:
             x=self.lRelu(self.bn(x))
         return x
-
 
 
 class Unet(nn.Module):
@@ -224,9 +223,81 @@ class Unet(nn.Module):
         
         up3=self.u3(down4,up2, last=True)
         # up4=self.u4(down3,up3)
-
         # up5=self.u5(down2,up4)
         # up6=self.u6(down1,up5,last=True)
         out = self.tanh(up3)
+
+        return out
+
+class Upsample_PS(nn.Module):
+    def __init__(self, C_in, C_out): 
+        super(Upsample_PS, self).__init__()
+        self.layer = nn.Sequential(
+            nn.PixelShuffle(2),
+            nn.BatchNorm2d(C_out),
+            nn.LeakyReLU()
+        )
+
+    def forward(self,x1,x2):
+
+        x=torch.cat((x1,x2),dim=1)
+        x=self.layer(x)
+
+        return x
+
+class Mobile_UNet(nn.Module):
+    def __init__(self):
+        super(Mobile_UNet, self).__init__()
+
+        #encoder
+        self.d1=Downsample(3,32)    #16, 32, 32
+        self.d2=Downsample(32,64)   #32, 16, 16
+        self.d3=Downsample(64,128)   #128, 8, 8
+        # self.d4=Downsample(64,128)
+        # self.d5=Downsample(128,256)
+
+        self.bottleneck1 = nn.Sequential(
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+        )
+
+        self.bottleneck2 = nn.Sequential(
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+        )
+
+        self.u1=Upsample_PS(128,64) #128, 16, 16
+        self.u2=Upsample_PS(64,32) #64, 32, 32
+        self.u3=Upsample_PS(32,16) #32, 64, 64
+        # self.u4=Upsample(64,16)
+        # self.u5=Upsample(32,1,(3,8),(1,8),(1,0))
+        self.deconv = nn.ConvTranspose2d(16, 3, 1, 1, 0)
+        self.tanh = nn.Tanh()
+        
+
+    def forward(self,x):
+
+        down1=self.d1(x)
+        down2=self.d2(down1)
+        down3=self.d3(down2)
+        # down4=self.d4(down3)
+        # down5=self.d5(down4)
+        bn1=self.bottleneck1(down3)
+        mid1 = down3 + bn1
+        bn2=self.bottleneck2(mid1)
+        mid2 = mid1 + bn2
+
+        up1=self.u1(down3,mid2)
+        # print(up1.shape)
+        up2=self.u2(down2,up1)
+        up3=self.u3(down1,up2)
+        # up4=self.u4(down2,up3)
+        # up5=self.u5(down1,up4,last=True)
+        out = self.deconv(up3)
+        out = self.tanh(out)
 
         return out
