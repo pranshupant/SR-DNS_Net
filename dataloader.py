@@ -20,8 +20,8 @@ class MyDataset(data.Dataset):
 
         self.ROOT = root
 
-        self.LES_DATA_PATH = self.ROOT + "/DNS-LES_3C/les_3c/"
-        self.DNS_DATA_PATH = self.ROOT + "/DNS-LES_3C/dns_3c/"
+        self.LES_DATA_PATH = self.ROOT + "/DNS-LES_128_3C/les_3c/"
+        self.DNS_DATA_PATH = self.ROOT + "/DNS-LES_128_3C/dns_3c/"
 
         self.img_list = img_list
 

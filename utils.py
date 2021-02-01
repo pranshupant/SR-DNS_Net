@@ -20,7 +20,7 @@ from skimage.metrics import peak_signal_noise_ratio
 def to_img(x):
     x = 0.5 * (x + 1)
     x = x.clamp(0, 1)
-    x = x.view(3, 64, 64)
+    x = x.view(3, 128, 128)
     return x
 
 def create_directories(root, mode):

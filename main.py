@@ -16,7 +16,7 @@ from PIL import Image
 import matplotlib.pyplot as plt 
 
 from dataloader import MyDataset
-from model import MobileNetv2_SISR, Unet, Mobile_UNet
+from model import MobileNetv2_SISR, Mobile_UNet
 from utils import *
 from train import *
 
@@ -24,10 +24,11 @@ from train import *
 Sample command -> python3 main.py 100 32 -d_set M -channels 3 --train /--test
 TODO: [*] Arg Parse for test pred
 TODO: [*] Try U-Net
-TODO: [] Performance with different d_set sizes
+TODO: [] Performance with different d_set sizes eg- medium_10k
+            - 1k, 10k, 20k, 50k
 TODO: [*] Validation and train plots
 TODO: [] Intermediate activations save on test data
-TODO: [] Mobile Unet
+TODO: [*] Mobile Unet
          - Pixel Shuffle Upsampling
          - Unet - Encoder and Decoder
          - BottleNeck Inverted Residual Layers w/ GSC (4x2)
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     ])
 
     #train, dev, test stplit
-    train = 2e4
+    train = 4e4
     dev = 1e3
     test = 1e3
 

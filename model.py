@@ -181,54 +181,6 @@ class Upsample(nn.Module):
         return x
 
 
-class Unet(nn.Module):
-    def __init__(self):
-        super(Unet, self).__init__()
-        
-        #encoder
-        # self.d1=Downsample(3,16, (4,4),(2,4),(1,0)) #16, 256, 256
-        # self.d2=Downsample(16,32, 4, 2, 1) #32, 128, 128
-        # self.d3=Downsample(32,64, 4, 2, 1) #64, 64, 64
-        self.d4=Downsample(3, 64, 4, 2, 1) #128, 32, 32
-        self.d5=Downsample(64,128, 4, 2, 1) #256, 16, 16
-        self.d6=Downsample(128, 256, 4, 2, 1) #256, 8, 8
-
-        self.u1=convTranspose_bn_LRelu(256, 128, 4, 2, 1) #128, 16, 16
-        self.u2=Upsample(256, 64, 4, 2, 1) # 128, 32, 32
-        self.u3=Upsample(128, 3, 4, 2, 1)#64, 64 ,64
-        # self.u4=Upsample(128,32, 4, 2, 1) #32, 128,128
-        # self.u5=Upsample(64,16, 4, 2, 1) #16, 256, 256
-        # self.u6=Upsample(32,20,(4,4),(2,4),(1,0)) #34, 512,1024
-
-        self.tanh = nn.Tanh()
-
-        self.drop1=nn.Dropout2d(p=0.2)
-        self.drop2=nn.Dropout2d(p=0.15)
-
-    def forward(self,x):
-
-        # down1=self.d1(x)
-        # down2=self.drop1(self.d2(down1))
-        
-        # down3=self.d3(down2)
-        down4=self.d4(x)
-
-        down5=self.d5(down4)
-        down6=self.d6(down5)
-
-
-        up1=self.u1(down6)
-        # print(down5.shape, up1.shape)
-        up2=self.u2(down5,up1)
-        
-        up3=self.u3(down4,up2, last=True)
-        # up4=self.u4(down3,up3)
-        # up5=self.u5(down2,up4)
-        # up6=self.u6(down1,up5,last=True)
-        out = self.tanh(up3)
-
-        return out
-
 class Upsample_PS(nn.Module):
     def __init__(self, C_in, C_out): 
         super(Upsample_PS, self).__init__()
@@ -250,35 +202,34 @@ class Mobile_UNet(nn.Module):
         super(Mobile_UNet, self).__init__()
 
         #encoder
-        self.d1=Downsample(3,32)    #16, 32, 32
-        self.d2=Downsample(32,64)   #32, 16, 16
-        self.d3=Downsample(64,128)   #128, 8, 8
+        self.d1=Downsample(3,32)    #16, 64, 64
+        self.d2=Downsample(32,64)   #32, 32, 32
+        self.d3=Downsample(64,128)   #128, 16, 16
         # self.d4=Downsample(64,128)
         # self.d5=Downsample(128,256)
 
         self.bottleneck1 = nn.Sequential(
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
         self.bottleneck2 = nn.Sequential(
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
-            InvertedResidual(128, 128, 1, 6), #128, 8, 8
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
-        self.u1=Upsample_PS(128,64) #128, 16, 16
-        self.u2=Upsample_PS(64,32) #64, 32, 32
-        self.u3=Upsample_PS(32,16) #32, 64, 64
+        self.u1=Upsample_PS(128,64) #128, 32, 32
+        self.u2=Upsample_PS(64,32) #64, 64, 64
+        self.u3=Upsample_PS(32,16) #32, 128, 128
         # self.u4=Upsample(64,16)
         # self.u5=Upsample(32,1,(3,8),(1,8),(1,0))
         self.deconv = nn.ConvTranspose2d(16, 3, 1, 1, 0)
         self.tanh = nn.Tanh()
         
-
     def forward(self,x):
 
         down1=self.d1(x)
