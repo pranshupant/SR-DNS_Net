@@ -6,6 +6,7 @@ import torch.nn as nn
 from torch.utils import data
 import os
 import pdb
+from utils import save_activation
 
 class ConvBNReLU(nn.Sequential):
     def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, groups=1):
@@ -213,6 +214,10 @@ class Mobile_UNet(nn.Module):
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
         self.bottleneck2 = nn.Sequential(
@@ -220,6 +225,10 @@ class Mobile_UNet(nn.Module):
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
         self.u1=Upsample_PS(128,64) #128, 32, 32
@@ -232,23 +241,33 @@ class Mobile_UNet(nn.Module):
         
     def forward(self,x):
 
+        save_activation(x, 0, 1)
         down1=self.d1(x)
+        save_activation(down1, 1, 2)
         down2=self.d2(down1)
+        save_activation(down2, 2, 4)
         down3=self.d3(down2)
+        save_activation(down3, 3, 8)
         # down4=self.d4(down3)
         # down5=self.d5(down4)
         bn1=self.bottleneck1(down3)
+        save_activation(bn1, 4, 8)
         mid1 = down3 + bn1
         bn2=self.bottleneck2(mid1)
+        save_activation(bn2, 5, 8)
         mid2 = mid1 + bn2
 
         up1=self.u1(down3,mid2)
+        save_activation(up1, 6, 4)
         # print(up1.shape)
         up2=self.u2(down2,up1)
+        save_activation(up2, 7, 2)
         up3=self.u3(down1,up2)
+        save_activation(up3, 8, 1)
         # up4=self.u4(down2,up3)
         # up5=self.u5(down1,up4,last=True)
         out = self.deconv(up3)
         out = self.tanh(out)
+        save_activation(out, 9, 1)
 
         return out

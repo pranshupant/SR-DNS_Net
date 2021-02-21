@@ -23,6 +23,12 @@ def to_img(x):
     x = x.view(3, 128, 128)
     return x
 
+def to_img_1C(x, factor):
+    x = 0.5 * (x[0] + 1)
+    x = x.clamp(0, 1)
+    x = x.view(1, 128//factor, 128//factor)
+    return x
+
 def create_directories(root, mode):
 
     if not os.path.exists(f'{root}/model{mode}'):
@@ -63,19 +69,20 @@ def SSIM(op, t):
 
     return ssim
 
-def plot_MAE(L, R, D):
+def plot_MAE(root, L, R, D):
 
     MAE = np.abs((np.array(R) - np.array(D))/np.array(D))
     print(MAE.shape)
     # print(MAE)
     avg = np.mean(MAE)
     plt.xticks([])
-    plt.title('Reconstruction')
+    # plt.title('Reconstruction')
     plt.ylabel('MAE')
+    plt.xlabel('Test Samples')
     plt.ylim(0,1.2)
     plt.plot(MAE, 'ko', fillstyle = 'none')
     plt.axhline(avg, color = 'r')
-    plt.savefig('MAE.eps')
+    plt.savefig(f'{root}/MAE.eps')
     plt.close()
 
     MAE_L = np.abs((np.array(L) - np.array(D))/np.array(D))
@@ -83,23 +90,24 @@ def plot_MAE(L, R, D):
     # print(MAE)
     avg_l = np.mean(MAE_L)
     plt.xticks([])
-    plt.title('LES')
+    # plt.title('LES')
     plt.ylabel('MAE')
+    plt.xlabel('Test Samples')
     # plt.plot(MAE, 'yo', fillstyle = 'none')
     plt.plot(MAE_L, 'ko', fillstyle = 'none')
     # plt.axhline(avg, color = 'r')
     plt.axhline(avg_l, color = 'r')
-    plt.savefig('MAE_L.eps')  # plt.show()
+    plt.savefig(f'{root}/MAE_L.eps')  # plt.show()
     plt.close()
 
 #combined plot for turbulent velocity
-def plot_Avg_MAE(L, R, D):
+def plot_Avg_MAE(root, L, R, D):
 
     avg = np.mean(np.abs(R))
     # plt.xticks([])
     # plt.title('Reconstruction')
     plt.ylabel('Average Turbulent Velocity')
-    plt.xlabel('Samples')
+    plt.xlabel('Test Samples')
     # plt.ylim(0,1.2)
     plt.plot(np.abs(R),  marker = '^', c = 'dodgerblue', label='Recon',ls=' ', ms='3.5')
 
@@ -113,15 +121,23 @@ def plot_Avg_MAE(L, R, D):
     # plt.axhline(avg, color = 'r')
     plt.axhline(avg_l, color = 'red', ls='-.',label='Avg. DNS', lw='1.5')
     plt.axhline(avg, color = 'k', ls='-.', label='Avg. Recon', lw='1.5')
-    plt.legend(loc='best')
-    plt.savefig('combined.eps')  # plt.show()
+    plt.legend(loc='upper left')
+    plt.savefig(f'{root}/combined.eps')  # plt.show()
     plt.close()
 
-def plot_training(Train_Loss, Dev_Loss):
+def plot_training(Train_Loss, Dev_Loss, root):
     plt.title(f'Training & Validation Losses')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.plot(Train_Loss, 'k-')
     plt.plot(Dev_Loss, 'g-')
     plt.legend(loc='best', labels=['Training Loss', 'Validation Loss'])
-    plt.savefig(f'training_plot.png', dpi=600)
+    plt.savefig(f'{root}/training_plot.png', dpi=600)
+    plt.close()
+
+def save_activation(x, idx, factor):
+    pic = to_img_1C(x[0], factor)
+    save_image(pic, f'activations/activation_{idx}.png')
+
+
+if __name__ == '__main__':

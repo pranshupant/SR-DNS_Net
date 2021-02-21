@@ -10,9 +10,9 @@ import time
 import argparse
 from multiprocessing import Pool
 
-# sample command: python3 create_dataset.py -k 21 -root data/k21
-# sample command: python3 create_dataset.py -k 11 -root data/k11
-# sample command: python3 create_dataset.py -k 41 -root data/k41
+# sample command: python3 create_dataset_filtered.py -k 21 -root data/k21
+# sample command: python3 create_dataset_filtered.py -k 11 -root data/k11
+# sample command: python3 create_dataset_filtered.py -k 41 -root data/k41
 
 N = 128
 p = np.linspace(0, 1, N)
@@ -31,18 +31,18 @@ LJHTDB.add_token("edu.cmu.andrew.ppant-68a123d6")
 
 def u_data(time, x, k):
 
-    u = LJHTDB.getData(
-                time,
-                x,
-                sinterp = 4,
-                getFunction='getVelocity')
+    # u = LJHTDB.getData(
+    #             time,
+    #             x,
+    #             sinterp = 4,
+    #             getFunction='getVelocity')
     ubox = LJHTDB.getBoxFilter(
                 time,
                 x,
                 field = 'velocity',
                 filter_width = k*(2*np.pi / 1024))
     
-    return u, ubox
+    return ubox
 
 def create_turb_dataset(t, k, root):
     count = 0
@@ -60,21 +60,21 @@ def create_turb_dataset(t, k, root):
                 x[:, :, 1] = py[:, np.newaxis]
                 x[:, :, 2] = z
 
-                u, u_box = u_data(t, x, k)
+                u_box = u_data(t, x, k)
 
                 if not os.path.exists(f'{root}/DNS-LES_128_3C/les/%.2f'%t):
                     os.mkdir(f'{root}/DNS-LES_128_3C/les/%.2f'%t)
-                if not os.path.exists(f'{root}/DNS-LES_128_3C/dns/%.2f'%t):
-                    os.mkdir(f'{root}/DNS-LES_128_3C/dns/%.2f'%t)
+                # if not os.path.exists(f'{root}/DNS-LES_128_3C/dns/%.2f'%t):
+                #     os.mkdir(f'{root}/DNS-LES_128_3C/dns/%.2f'%t)
 
                 
-                norm1 = cv2.normalize(u, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+                # norm1 = cv2.normalize(u, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
                 norm2 = cv2.normalize(u_box, 0, 255,norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
                 
                 if count%100 == 0:
                     print(count)
 
-                cv2.imwrite(f"{root}/DNS-LES_128_3C/dns/%.2f/%d.png"%(t,count), norm1)
+                # cv2.imwrite(f"{root}/DNS-LES_128_3C/dns/%.2f/%d.png"%(t,count), norm1)
                 cv2.imwrite(f"{root}/DNS-LES_128_3C/les/%.2f/%d.png"%(t,count), norm2)
                 count+=1
                 end_time = time.time()
@@ -98,9 +98,9 @@ def create_dirs(root):
         os.mkdir(f"{root}/DNS-LES_128_3C/dns")
         dir3 = True
 
-    if not dir1 and dir2 and dir3:
+    if not (dir1 and dir2 and dir3):
         print('Dataset Already Created')
-        return False
+        return True
     else:  
         print('Created Directories')
         return True
@@ -116,8 +116,8 @@ if __name__ == '__main__':
     run = create_dirs(args.root)
 
     if run:
-        # T = [2.0, 2.1, 3.6, 9.0]
-        T = np.arange(0.0, 10.1, 0.1)
+        T = [7.7]
+        # T = np.arange(9.2, 10.1, 0.1)
         iter_T = {(t, int(args.k), args.root) for t in T}
 
         y = Pool()

@@ -24,10 +24,10 @@ from train import *
 Sample command -> python3 main.py 100 32 -d_set M -channels 3 --train /--test
 TODO: [*] Arg Parse for test pred
 TODO: [*] Try U-Net
-TODO: [] Performance with different d_set sizes eg- medium_10k
+TODO: [*] Performance with different d_set sizes eg- medium_10k
             - 1k, 10k, 20k, 50k
 TODO: [*] Validation and train plots
-TODO: [] Intermediate activations save on test data
+TODO: [*] Intermediate activations save on test data
 TODO: [*] Mobile Unet
          - Pixel Shuffle Upsampling
          - Unet - Encoder and Decoder
@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument(dest='batch_size', type=int, default=32, help= 'Batch Size')
     parser.add_argument('--test', dest='testing', action='store_true')
     parser.add_argument('--train', dest='training', action='store_true')
+    parser.add_argument('--transfer', dest='transfer_learning', action='store_true')
 
     args = parser.parse_args()
     root += d_set.get(args.dataset)
@@ -75,7 +76,7 @@ if __name__ == '__main__':
 
     #train, dev, test stplit
     train = 4e4
-    dev = 1e3
+    dev = 5e3
     test = 1e3
 
     data_split = (train, dev, test)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         # print(train_dataset.__len__())
 
         dev_dataset = MyDataset('dev', root, img_list, data_split, transform=test_transform)
-        dev_loader_args = dict(batch_size=batch_size, shuffle=False, num_workers=8)
+        dev_loader_args = dict(batch_size=batch_size, shuffle=True, num_workers=8)
         dev_loader = data.DataLoader(dev_dataset, **dev_loader_args)
         # print(dev_dataset.__len__())
 
@@ -103,12 +104,24 @@ if __name__ == '__main__':
         test_loader = data.DataLoader(test_dataset, **test_loader_args)
         # print(test_dataset.__len__())
 
- 
-        model.apply(MobileNetv2_SISR.init_weights)
-        device = torch.device("cuda")
-        model.eval()
-        model.to(device)        
-        # print(model)
+        if args.transfer_learning:
+
+            tl_root = 'data/k21'
+            tl_epoch = 45
+            PATH = f'{tl_root}/model_3c/SISR_mv2f_{tl_epoch}.pth'
+            model.load_state_dict(torch.load(PATH))
+            device = torch.device("cuda")
+            model.eval()
+            model.to(device)
+            print(f'Using Transfer Learning')
+
+        else:
+
+            model.apply(MobileNetv2_SISR.init_weights)
+            device = torch.device("cuda")
+            model.eval()
+            model.to(device)        
+            # print(model)
 
         Train_Loss = []
         Dev_Loss = []
@@ -136,7 +149,7 @@ if __name__ == '__main__':
             if epoch%5 == 0:
                 torch.save(model.state_dict(), f'{root}/model_3c/SISR_mv2f_{epoch}.pth')
 
-        plot_training(Train_Loss, Dev_Loss)
+        plot_training(Train_Loss, Dev_Loss, root)
 
         print(f'Prediction at Epoch: {num_epochs}')
         test_predictions(model, test_loader, root)
@@ -150,7 +163,7 @@ if __name__ == '__main__':
         test_loader = data.DataLoader(test_dataset, **test_loader_args)
         # print(test_dataset.__len__())
 
-        test_epoch = 50
+        test_epoch = 45
         PATH = f'{root}/model_3c/SISR_mv2f_{test_epoch}.pth'
         model.load_state_dict(torch.load(PATH))
         device = torch.device("cuda")
@@ -158,6 +171,7 @@ if __name__ == '__main__':
         model.to(device)
 
         print(f'Prediction at Epoch: {num_epochs}')
+        t1 = time.time()
         test_predictions(model, test_loader, root)
         # train_predictions(model, test_loader)
 

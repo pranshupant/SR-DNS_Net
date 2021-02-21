@@ -130,7 +130,10 @@ def test_predictions(model, test_loader, root):
             img = img.to(device)
             target = target.to(device)
             
+            # t1 = time.time()
             out = model(img)
+            # print(f'Avg Time for evaluation: {(time.time()-t1)*(1/1000)} secs')
+
             psnr = PSNR(out, target)
             psnr_les = PSNR(img, target)
 
@@ -167,8 +170,8 @@ def test_predictions(model, test_loader, root):
             avg_ssim_les += ssim_les.item()/len(test_loader)
             avg_ssim_dns += ssim_dns.item()/len(test_loader)
 
-    plot_MAE(L, R, D)
-    plot_Avg_MAE(L_, R_, D_)
+    plot_MAE(root, L, R, D)
+    plot_Avg_MAE(root, L_, R_, D_)
 
     print(f"Metrics On Test Data")
     print(f"PSNR_RECON: {avg_psnr:.4f},PSNR_LES: {avg_psnr_les:.4f}")
