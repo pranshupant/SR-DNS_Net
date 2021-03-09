@@ -21,7 +21,8 @@ from utils import *
 from train import *
 
 '''
-Sample command -> python3 main.py 100 32 -d_set M -channels 3 --train /--test
+Sample commands -> python3 main.py 100 32 -d_set M -channels 3 --train /--test
+               -> python3 main.py 51 32 -d_set C -channels 3 --train --transfer >> tl_cm
 TODO: [*] Arg Parse for test pred
 TODO: [*] Try U-Net
 TODO: [*] Performance with different d_set sizes eg- medium_10k
@@ -76,7 +77,7 @@ if __name__ == '__main__':
 
     #train, dev, test stplit
     train = 4e4
-    dev = 5e3
+    dev = 1e3
     test = 1e3
 
     data_split = (train, dev, test)
@@ -150,6 +151,8 @@ if __name__ == '__main__':
                 torch.save(model.state_dict(), f'{root}/model_3c/SISR_mv2f_{epoch}.pth')
 
         plot_training(Train_Loss, Dev_Loss, root)
+        np.save('train_loss.npy', np.array(Train_Loss))
+        np.save('dev_loss.npy', np.array(Dev_Loss))
 
         print(f'Prediction at Epoch: {num_epochs}')
         test_predictions(model, test_loader, root)
@@ -163,7 +166,7 @@ if __name__ == '__main__':
         test_loader = data.DataLoader(test_dataset, **test_loader_args)
         # print(test_dataset.__len__())
 
-        test_epoch = 45
+        test_epoch = 25
         PATH = f'{root}/model_3c/SISR_mv2f_{test_epoch}.pth'
         model.load_state_dict(torch.load(PATH))
         device = torch.device("cuda")

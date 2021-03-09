@@ -19,7 +19,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 ## TODO : [*] Remove batch_size decl.
 ## TODO : [*] Print within the fucntions not main
-## TODO : [] Fix test predictions with list averaging
+## TODO : [*] Fix test predictions with list averaging
 
 def train_epoch(model, data_loader, criterion, optimizer):
     model.train()
@@ -27,6 +27,7 @@ def train_epoch(model, data_loader, criterion, optimizer):
     running_loss = []
     avg_psnr = []
     avg_psnr_les = []
+    LAMBDA = 1e-2
 
     start_time = time.time()
     print('Train Loop')
@@ -37,7 +38,9 @@ def train_epoch(model, data_loader, criterion, optimizer):
         target = target.to(device)
 
         output = model(img)
-        loss = criterion(output, target)
+        # print(KE_Loss(output, target))
+        # pdb.set_trace()
+        loss = criterion(output, target)# + KE_Loss(output, target) #+ LAMBDA*Continuity_Loss(output, target) 
         psnr = PSNR(output, target)
         psnr_les = PSNR(img, target)
         
@@ -95,6 +98,10 @@ def dev_epoch(model, data_loader, criterion):
         torch.cuda.empty_cache()
         end_time = time.time()
 
+        print(KE_Loss(output, target))
+        print(Continuity_Loss(output, target))
+        print(criterion(output, target))
+
         del img
         del target
         del loss
@@ -103,6 +110,10 @@ def dev_epoch(model, data_loader, criterion):
 
         print(f"Dev Time: {end_time-start_time:.2f} s")
         print(f'PSNR_DNS:{sum(avg_psnr)/len(avg_psnr):.4f}, PSNR_LES:{sum(avg_psnr_les)/len(avg_psnr_les):.4f}, SSIM_DNS:{sum(avg_ssim_dns)/len(avg_ssim_dns):.4f}, SSIM_LES:{sum(avg_ssim_les)/len(avg_ssim_les):.4f}')
+        
+        with open("dev.txt", "a") as f:
+            f.write(str(sum(avg_psnr)/len(avg_psnr)))
+            f.write("\n")
 
         return sum(running_loss)/len(running_loss)
 
@@ -130,9 +141,9 @@ def test_predictions(model, test_loader, root):
             img = img.to(device)
             target = target.to(device)
             
-            # t1 = time.time()
+            t1 = time.time()
             out = model(img)
-            # print(f'Avg Time for evaluation: {(time.time()-t1)*(1/1000)} secs')
+            # print(f'Avg Time for evaluation: {(time.time()-t1)*(1/test_loader.batch_size)} secs')
 
             psnr = PSNR(out, target)
             psnr_les = PSNR(img, target)

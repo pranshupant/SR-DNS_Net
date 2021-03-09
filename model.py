@@ -210,17 +210,19 @@ class Mobile_UNet(nn.Module):
         # self.d5=Downsample(128,256)
 
         self.bottleneck1 = nn.Sequential(
+            # nn.Identity()
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
+        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
+        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
+        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
         self.bottleneck2 = nn.Sequential(
+            # nn.Identity()
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
