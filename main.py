@@ -10,6 +10,7 @@ from torch.optim import lr_scheduler
 import argparse
 import time
 import os
+import sys
 import cv2
 import pdb
 from PIL import Image
@@ -85,6 +86,9 @@ if __name__ == '__main__':
     np.random.seed(42)
 
     img_list = np.random.permutation(int(sum(data_split)))
+    # img_list = range(0, int(sum(data_split)+1), 1)
+    # print(img_list)
+    # sys.exit()
 
     model = Mobile_UNet()
 
@@ -166,7 +170,7 @@ if __name__ == '__main__':
         test_loader = data.DataLoader(test_dataset, **test_loader_args)
         # print(test_dataset.__len__())
 
-        test_epoch = 25
+        test_epoch = 30
         PATH = f'{root}/model_3c/SISR_mv2f_{test_epoch}.pth'
         model.load_state_dict(torch.load(PATH))
         device = torch.device("cuda")

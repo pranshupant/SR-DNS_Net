@@ -215,10 +215,10 @@ class Mobile_UNet(nn.Module):
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
-        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
-        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
-        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
-        #     InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
         self.bottleneck2 = nn.Sequential(
@@ -227,10 +227,10 @@ class Mobile_UNet(nn.Module):
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
             InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
-            # InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
+            InvertedResidual(128, 128, 1, 6), #128, 16, 16
         )
 
         self.u1=Upsample_PS(128,64) #128, 32, 32
